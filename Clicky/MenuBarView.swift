@@ -10,6 +10,7 @@ import SwiftUI
 /// Main menu bar popover view
 struct MenuBarView: View {
     @ObservedObject var appState = AppState.shared
+    @State private var showingAbout = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -21,6 +22,14 @@ struct MenuBarView: View {
                 Text("Clicky")
                     .font(.headline)
                 Spacer()
+                
+                // About button
+                Button(action: { showingAbout = true }) {
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                
                 statusIndicator
             }
             
@@ -40,21 +49,30 @@ struct MenuBarView: View {
             
             Divider()
             
-            // Haptic Type Picker
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Haptic Type")
+            // Sound Library Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Sound Library")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Picker("Haptic Type", selection: $appState.hapticType) {
-                    Text("Weak").tag(ActuationType.weak)
-                    Text("Medium").tag(ActuationType.medium)
-                    Text("Strong").tag(ActuationType.strong)
-                    Text("Limit").tag(ActuationType.limit)
+                ForEach(HapticSoundPreset.allCases) { preset in
+                    SoundPresetRow(
+                        preset: preset,
+                        isSelected: appState.soundPreset == preset,
+                        onSelect: {
+                            appState.soundPreset = preset
+                        },
+                        onTest: {
+                            let original = appState.hapticManager.actuationType
+                            appState.hapticManager.actuationType = preset.actuationType
+                            appState.hapticManager.triggerHaptic()
+                            appState.hapticManager.actuationType = original
+                        }
+                    )
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
             }
+            
+            Divider()
             
             // Intensity Slider
             VStack(alignment: .leading, spacing: 6) {
@@ -71,16 +89,6 @@ struct MenuBarView: View {
                 
                 Slider(value: $appState.intensity, in: 0.0...1.0, step: 0.05)
             }
-            
-            // Test Button
-            Button(action: {
-                appState.testHaptic()
-            }) {
-                Label("Test Haptic", systemImage: "waveform")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .disabled(!appState.hapticManager.isAvailable)
             
             Divider()
             
@@ -108,6 +116,9 @@ struct MenuBarView: View {
         }
         .padding()
         .frame(width: 280)
+        .sheet(isPresented: $showingAbout) {
+            AboutView()
+        }
     }
     
     // MARK: - Subviews
@@ -146,6 +157,123 @@ struct MenuBarView: View {
         .padding(10)
         .background(Color.orange.opacity(0.1))
         .cornerRadius(8)
+    }
+}
+
+// MARK: - Sound Preset Row
+
+struct SoundPresetRow: View {
+    let preset: HapticSoundPreset
+    let isSelected: Bool
+    let onSelect: () -> Void
+    let onTest: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 10) {
+            // Selection indicator
+            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(isSelected ? .accentColor : .secondary)
+                .font(.system(size: 16))
+            
+            // Icon
+            Image(systemName: preset.icon)
+                .foregroundColor(.secondary)
+                .frame(width: 20)
+            
+            // Text
+            VStack(alignment: .leading, spacing: 1) {
+                Text(preset.displayName)
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                Text(preset.subtitle)
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            // Test button
+            Button(action: onTest) {
+                Image(systemName: "play.circle")
+                    .font(.system(size: 16))
+                    .foregroundColor(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("Test this sound")
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 8)
+        .background(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+        .cornerRadius(6)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onSelect()
+        }
+    }
+}
+
+// MARK: - About View
+
+struct AboutView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // App Icon
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 64, height: 64)
+            
+            // App Name
+            VStack(spacing: 4) {
+                Text("Clicky")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                Text("Version 1.0.0")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Text("Haptic feedback for your keyboard")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Divider()
+            
+            // Creator
+            VStack(spacing: 4) {
+                Text("Created by Satwik")
+                    .font(.subheadline)
+                
+                Button(action: {
+                    if let url = URL(string: "https://github.com/mrsuperwealthy") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "link")
+                            .font(.caption)
+                        Text("github.com/mrsuperwealthy")
+                            .font(.caption)
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.blue)
+            }
+            
+            Text("Open Source")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+            
+            Button("Done") {
+                dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        }
+        .padding(24)
+        .frame(width: 240)
     }
 }
 

@@ -7,6 +7,7 @@
 
 import Foundation
 import IOKit
+import SwiftUI
 
 // MARK: - Private MultitouchSupport.framework API Declarations
 
@@ -101,15 +102,15 @@ final class MultitouchDeviceDiscovery {
     }
 }
 
-// MARK: - Actuation Types
+// MARK: - Actuation Types (Raw IDs)
 enum ActuationType: Int32 {
     case weak = 1        // Gentle click feedback
-    case medium = 2      // Medium click
+    case medium = 2      // Medium click / Double tap feel
     case strong = 3      // Strong click
     case buzz = 4        // Short buzz
     case doubleBuzz = 5  // Double buzz pattern
-    case limit = 6       // Sharp "limit" click - feels like hitting a boundary
-    case heavy = 15      // Heavy thunk
+    case limit = 6       // Sharp "limit" click - metallic clack (Typewriter)
+    case heavy = 15      // Heavy thunk (Force)
     case light = 16      // Light tap
     
     var description: String {
@@ -122,6 +123,67 @@ enum ActuationType: Int32 {
         case .limit: return "Limit Click"
         case .heavy: return "Heavy"
         case .light: return "Light"
+        }
+    }
+}
+
+// MARK: - Haptic Sound Library Presets
+enum HapticSoundPreset: String, CaseIterable, Identifiable {
+    case mechanicalClick = "mechanical"   // Typewriter - actuationID: 6
+    case heavyThud = "heavy"              // Force - actuationID: 15
+    case doubleTap = "double"             // Double Tap - actuationID: 2
+    case softClick = "soft"               // Soft - actuationID: 1
+    case crispClick = "crisp"             // Crisp - actuationID: 3
+    
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .mechanicalClick: return "Mechanical Click"
+        case .heavyThud: return "Heavy Thud"
+        case .doubleTap: return "Double Tap"
+        case .softClick: return "Soft Click"
+        case .crispClick: return "Crisp Click"
+        }
+    }
+    
+    var subtitle: String {
+        switch self {
+        case .mechanicalClick: return "Typewriter feel"
+        case .heavyThud: return "Forceful thunk"
+        case .doubleTap: return "Light double tap"
+        case .softClick: return "Gentle feedback"
+        case .crispClick: return "Sharp and clean"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .mechanicalClick: return "keyboard"
+        case .heavyThud: return "hammer.fill"
+        case .doubleTap: return "hand.tap"
+        case .softClick: return "leaf.fill"
+        case .crispClick: return "bolt.fill"
+        }
+    }
+    
+    var actuationType: ActuationType {
+        switch self {
+        case .mechanicalClick: return .limit    // ID: 6 - loudest metallic clack
+        case .heavyThud: return .heavy          // ID: 15 - heavy thunk
+        case .doubleTap: return .medium         // ID: 2 - double tap feel
+        case .softClick: return .weak           // ID: 1 - gentle
+        case .crispClick: return .strong        // ID: 3 - sharp
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .mechanicalClick: return .purple
+        case .heavyThud: return .red
+        case .doubleTap: return .blue
+        case .softClick: return .green
+        case .crispClick: return .orange
         }
     }
 }

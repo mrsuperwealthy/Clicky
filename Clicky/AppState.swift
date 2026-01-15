@@ -14,7 +14,7 @@ final class AppState: ObservableObject {
     
     // MARK: - Published Properties
     
-    /// Whether the space-click feature is enabled
+    /// Whether the haptic keys feature is enabled
     @Published var isEnabled: Bool = false {
         didSet {
             handleEnabledChange()
@@ -22,17 +22,17 @@ final class AppState: ObservableObject {
     }
     
     /// Haptic intensity (0.0 - 1.0)
-    @Published var intensity: Double = 0.5 {
+    @Published var intensity: Double = 0.7 {
         didSet {
             HapticManager.shared.intensity = intensity
             saveSettings()
         }
     }
     
-    /// Selected haptic type
-    @Published var hapticType: ActuationType = .weak {
+    /// Selected sound preset
+    @Published var soundPreset: HapticSoundPreset = .mechanicalClick {
         didSet {
-            HapticManager.shared.actuationType = hapticType
+            HapticManager.shared.actuationType = soundPreset.actuationType
             saveSettings()
         }
     }
@@ -50,7 +50,7 @@ final class AppState: ObservableObject {
     // UserDefaults keys
     private let enabledKey = "clicky.isEnabled"
     private let intensityKey = "clicky.intensity"
-    private let hapticTypeKey = "clicky.hapticType"
+    private let soundPresetKey = "clicky.soundPreset"
     
     private init() {
         loadSettings()
@@ -105,21 +105,21 @@ final class AppState: ObservableObject {
             intensity = defaults.double(forKey: intensityKey)
         }
         
-        if let typeValue = defaults.object(forKey: hapticTypeKey) as? Int32,
-           let type = ActuationType(rawValue: typeValue) {
-            hapticType = type
+        if let presetRaw = defaults.string(forKey: soundPresetKey),
+           let preset = HapticSoundPreset(rawValue: presetRaw) {
+            soundPreset = preset
         }
         
         // Apply loaded settings to managers
         hapticManager.intensity = intensity
-        hapticManager.actuationType = hapticType
+        hapticManager.actuationType = soundPreset.actuationType
     }
     
     private func saveSettings() {
         let defaults = UserDefaults.standard
         defaults.set(isEnabled, forKey: enabledKey)
         defaults.set(intensity, forKey: intensityKey)
-        defaults.set(hapticType.rawValue, forKey: hapticTypeKey)
+        defaults.set(soundPreset.rawValue, forKey: soundPresetKey)
     }
     
     /// Test haptic feedback
